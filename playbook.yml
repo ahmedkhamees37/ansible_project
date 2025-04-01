@@ -1,0 +1,7 @@
+- name: WordPress Deployment apache and php
+  hosts: all
+  roles:
+    - apache
+    - php
+    - mariadb
+

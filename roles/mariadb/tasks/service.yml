@@ -1,0 +1,14 @@
+- name: Start MariaDB and Enable on Boot (Ubuntu)
+  service:
+    name: mariadb
+    state: started
+    enabled: yes
+  when: ansible_os_family == "Debian"
+
+- name: Start MariaDB and Enable on Boot (CentOS)
+  service:
+    name: mariadb
+    state: started
+    enabled: yes
+  when: ansible_os_family == "RedHat"
+

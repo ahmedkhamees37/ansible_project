@@ -1,0 +1,11 @@
+- name: Install MariaDB (Ubuntu)
+  apt:
+    name: mariadb-server
+    state: present
+  when: ansible_os_family == "Debian"
+
+- name: Install MariaDB (CentOS)
+  yum:
+    name: mariadb-server
+    state: present
+  when: ansible_os_family == "RedHat"

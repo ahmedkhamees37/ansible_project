@@ -1,0 +1,13 @@
+- name: Start Apache and Enable on Boot (Ubuntu)
+  service:
+    name: apache2
+    state: started
+    enabled: yes
+  when: ansible_os_family == "Debian"
+
+- name: Start Apache and Enable on Boot (CentOS)
+  service:
+    name: httpd
+    state: started
+    enabled: yes
+  when: ansible_os_family == "RedHat"

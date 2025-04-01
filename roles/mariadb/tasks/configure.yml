@@ -1,0 +1,19 @@
+- name: Secure MariaDB Installation
+  mysql_user:
+    name: root
+    password: "{{ db_root_password }}"
+    host: localhost
+  no_log: true
+
+- name: Create WordPress Database
+  mysql_db:
+    name: wordpress
+    state: present
+
+- name: Create WordPress User
+  mysql_user:
+    name: wordpress_user
+    password: "{{ db_user_password }}"
+    priv: 'wordpress.*:ALL'
+    host: '%'
+    state: present

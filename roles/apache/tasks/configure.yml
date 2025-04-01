@@ -1,0 +1,12 @@
+- name: Deploy Apache Configuration
+  template:
+    src: apache.conf.j2
+    dest: /etc/apache2/sites-available/wordpress.conf
+  when: ansible_os_family == "Debian"
+
+- name: Deploy Apache Configuration (CentOS)
+  template:
+    src: apache.conf.j2
+    dest: /etc/httpd/conf.d/wordpress.conf
+  when: ansible_os_family == "RedHat"
+
