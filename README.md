@@ -8,6 +8,9 @@ This project automates the deployment of **WordPress** using **Ansible** with th
 
 The playbook is designed to work on **Ubuntu**, **CentOS**, and supports deployment on **on-premises** and **AWS EC2 instances**. 🌟
 
+![Screenshot 2025-04-02 140624](https://github.com/user-attachments/assets/947f5fb1-bc51-427b-a4ac-e424de7956a0)
+
+
 ---
 
 ## 📂 Project Structure
