@@ -1,5 +1,5 @@
 - name: WordPress Deployment apache and php
-  hosts: all
+  hosts: servers
   roles:
     - apache
     - php

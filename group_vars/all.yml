@@ -1,3 +1,4 @@
 db_root_password: "wordpress"
 db_user_password: "ansiblewordpress"
+ansible_python_interpreter: /usr/bin/python3
 
