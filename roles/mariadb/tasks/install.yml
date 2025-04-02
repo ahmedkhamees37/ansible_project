@@ -9,3 +9,10 @@
     name: mariadb-server
     state: present
   when: ansible_os_family == "RedHat"
+
+- name: Start and Enable MariaDB
+  systemd:
+    name: mariadb
+    state: started
+    enabled: yes
+
