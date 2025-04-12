@@ -1,125 +1,118 @@
-# 🚀 Deploy WordPress with Ansible Roles (Apache, PHP, MariaDB)
+# WordPress Deployment with Ansible 🚀
 
-## 📌 Overview
-This project automates the deployment of **WordPress** using **Ansible** with three separate roles:
-- **Apache** (Handles the web server)
-- **PHP** (Processes WordPress code)
-- **MariaDB** (Manages the WordPress database)
+## 📝 Overview
+This Ansible project automates the deployment of a WordPress website on CentOS/RHEL servers. It sets up a complete LAMP stack (Linux, Apache, MariaDB, PHP) and configures WordPress with secure defaults.
 
-The playbook is designed to work on **Ubuntu**, **CentOS**, and supports deployment on **on-premises** and **AWS EC2 instances**. 🌟
-
-![Screenshot 2025-04-02 140624](https://github.com/user-attachments/assets/947f5fb1-bc51-427b-a4ac-e424de7956a0)
-
-
----
-
-## 📂 Project Structure
-```bash
-wordpress-deployment/
-│── ansible.cfg
-│── inventory.ini
-│── playbook.yml
-│── roles/
-│   ├── apache/
-│   │   ├── tasks/main.yml
-│   │   ├── handlers/main.yml
-│   │   └── templates/apache.conf.j2
-│   ├── php/
-│   │   └── tasks/main.yml
-│   └── mariadb/
-│       ├── tasks/main.yml
-│       └── handlers/main.yml
-│── group_vars/
-│── host_vars/
+```mermaid
+graph TD
+    A[Playbook] --> B[Install Apache]
+    A --> C[Install MariaDB]
+    A --> D[Install PHP]
+    A --> E[Configure WordPress]
+    B --> F[Running Website]
+    C --> F
+    D --> F
+    E --> F
 ```
 
----
+## ✨ Features
+- 🛡️ Secure MariaDB installation with root password protection  
+- 🚀 Automatic WordPress download and configuration  
+- 🔐 Database security with dedicated WordPress user  
+- 🔄 Idempotent - safe to run multiple times  
+- 📦 Modular role structure following Ansible best practices  
 
-## ⚙️ Prerequisites
+## 📦 Requirements
 
-Before running the playbook, ensure you have:
-- **Ansible installed** (`sudo apt install ansible` or `sudo yum install ansible`)
-- **SSH access to target servers**
-- **AWS Key Pair** (if deploying on AWS)
-- **Correct security group settings** (for AWS, ensure ports 22, 80, 443, and 3306 are open)
+### Control Machine:
+- Ansible 2.9+
+- Python 3.6+
 
----
+### Target Servers:
+- CentOS/RHEL 7/8
+- 2GB+ RAM (recommended)
+- Python 3 with PyMySQL (`python3-PyMySQL`)
 
-## 🏢 Supported Environments
-- **On-Premises:** Supports local VM-based or bare-metal servers running Ubuntu or CentOS.
-- **AWS EC2:** Automatically detects AWS instances and configures settings accordingly.
+## 🛠️ Installation
 
----
-
-## 👩‍💻 Installation Guide
-
-### 1️⃣ Clone the repository
+Clone the repository:
 ```bash
 git clone https://github.com/ahmedkhamees37/wordpress-ansible.git
 cd wordpress-ansible
 ```
 
-### 2️⃣ Edit the inventory file (`inventory.ini`)
-Modify the file to include your target servers:
+
+
+## ⚙️ Configuration
+
+Edit these files before deployment:
+
+### `inventory.ini` - Add your server details
 ```ini
-[webserver]
-192.168.1.10 ansible_user=root ansible_os_family=Ubuntu
-
-[dbserver]
-192.168.1.20 ansible_user=root ansible_os_family=RedHat
-
-[aws_instances]
-10.5.10.8 ansible_user=ec2-user ansible_ssh_private_key_file=~/.ssh/aws-key.pem ansible_os_family=RedHat
+[wordpress]
+your.server.ip ansible_user=username ansible_ssh_private_key_file=~/.ssh/key.pem
 ```
 
-### 3️⃣ Run the playbook
+### `group_vars/all.yml` - Set your credentials (use Ansible Vault for production!)
+```yaml
+db_root_password: "YourSecureRootPassword123!"
+wp_db_password: "WordPressDBPassword456!"
+```
+
+## 🚀 Deployment
+
+Run the playbook:
 ```bash
 ansible-playbook -i inventory.ini playbook.yml
 ```
 
+## 🔧 Customization Options
+
+| Variable         | Default         | Description                     |
+|------------------|------------------|---------------------------------|
+| `wp_db_name`     | `wordpress`      | WordPress database name         |
+| `wp_db_user`     | `wpuser`         | Database username               |
+| `document_root`  | `/var/www/html`  | Web root directory              |
+| `php_version`    | `8.2`            | PHP version to install          |
+
+## 🛡️ Security Best Practices
+
+- 🔒 Always use Ansible Vault for sensitive data  
+- 🔄 Regularly update system packages  
+- 📜 Configure firewall rules (included in playbook)  
+- ✂️ Remove default test databases and anonymous users  
+
+## 📊 Monitoring
+
+The playbook includes optional tasks for:
+
+- 📈 Prometheus monitoring setup  
+- 📋 Logrotate configuration  
+- 🔔 Email alerts for critical events  
+
+## 🤝 Contributing
+
+Pull requests are welcome! Please follow these steps:
+
+1. Fork the repository  
+2. Create your feature branch (`git checkout -b feature/AmazingFeature`)  
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)  
+4. Push to the branch (`git push origin feature/AmazingFeature`)  
+5. Open a Pull Request  
+
+## 📜 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 📬 Contact
+
+For questions or support:
+
+- 📧 Email: ahmedkhamees37@gmail.com  
+
+- 💼 LinkedIn: https://www.linkedin.com/in/ahmed-khamis37/ 
+
 ---
 
-## 🖥️ Roles Overview
+**Made with ❤️ and Ansible magic! ✨**
 
-### 📌 Apache Role (`roles/apache/`)
-- Installs Apache (`apache2` for Ubuntu, `httpd` for CentOS)
-- Deploys a custom VirtualHost configuration
-- Starts and enables the service
-- Configures firewall settings for web traffic
-
-### 📌 PHP Role (`roles/php/`)
-- Installs PHP and required extensions
-- Ensures compatibility with WordPress
-
-### 📌 MariaDB Role (`roles/mariadb/`)
-- Installs MariaDB server
-- Creates a WordPress database and user
-- Configures security settings
-- Ensures **on-premises** and **AWS EC2** compatibility
-
----
-
-## 🌟 AWS Deployment Considerations
-- Ensure your **AWS security group** allows:
-  - **Port 22** (SSH)
-  - **Port 80 & 443** (HTTP & HTTPS)
-  - **Port 3306** (MariaDB - if connecting remotely)
-- Use the correct **EC2 key pair** to connect via SSH.
-
----
-
-## 💡 Next Steps
-- Automate WordPress installation 📚
-- Enhance security settings 🔒
-- Implement SSL support with Let's Encrypt 🔑
-- Optimize performance for AWS scaling 🚀
-
----
-
-## 📃 License
-This project is licensed under the **MIT License**.
-
----
-
-## 🌍 Connect
-👉 [LinkedIn](https://linkedin.com/in/ahmed-khamis37)
