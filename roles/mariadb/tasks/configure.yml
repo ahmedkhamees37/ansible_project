@@ -1,53 +1,152 @@
-- name: Detect OS and set MySQL socket path
-  set_fact:
-    mysql_socket: >-
-      {%- if ansible_os_family == "RedHat" -%}
-        /var/lib/mysql/mysql.sock
-      {%- elif ansible_os_family == "Debian" -%}
-        /run/mysqld/mysqld.sock
-      {%- else -%}
-        /var/lib/mysql/mysql.sock  # Default fallback
-      {%- endif -%}
-
-- name: Install PyMySQL
+- name: Install Apache, PHP, and required extensions
   become: yes
-  package:
-    name: python3-PyMySQL
+  yum:
+    name:
+      - httpd
+      - php
+      - php-mysqlnd
+      - php-fpm
+      - php-json
+      - php-gd
+      - php-xml
+      - php-mbstring
+      - wget
+      - unzip
     state: present
 
-- name: Secure MariaDB Installation
-  community.mysql.mysql_user:
-    name: root
-    password: "{{ db_root_password }}"
-    host: localhost
-    login_password: "{{ db_root_password }}"
-    login_unix_socket: "{{ mysql_socket }}"
-    state: present
-    update_password: always
+- name: Start and enable Apache (httpd)
+  become: yes
+  systemd:
+    name: httpd
+    state: started
+    enabled: yes
 
-- name: Create WordPress Database
-  community.mysql.mysql_db:
+# Install MySQL (MariaDB) Server for Debian
+- name: Install MySQL (MariaDB) Server
+  apt:
+    name: mariadb-server
+    state: present
+  when: ansible_facts['os_family'] == "Debian"
+
+# Install MySQL (MariaDB) Server for RedHat/CentOS
+- name: Install MySQL (MariaDB) Server for RedHat/CentOS
+  yum:
+    name: mariadb-server
+    state: present
+  when: ansible_facts['os_family'] == "RedHat"
+
+- name: Start and enable MariaDB
+  systemd:
+    name: mariadb
+    state: started
+    enabled: yes
+
+- name: Ensure MySQL service is running
+  service:
+    name: mysql
+    state: started
+    enabled: yes
+
+- name: Create WordPress database
+  mysql_db:
     name: wordpress
     state: present
     login_user: root
     login_password: "{{ db_root_password }}"
-    login_unix_socket: "{{ mysql_socket }}"
 
-- name: Create WordPress User with Permissions
-  community.mysql.mysql_user:
-    name: wordpress_user
-    password: "{{ db_user_password }}"
-    priv: "wordpress.*:ALL"
-    host: '%'
+- name: Create WordPress database user
+  mysql_user:
+    name: wp_user
+    password: wp_password
+    priv: 'wordpress.*:ALL'
+    host: 'localhost'
     state: present
     login_user: root
     login_password: "{{ db_root_password }}"
-    login_unix_socket: "{{ mysql_socket }}"
 
-- name: Flush MySQL Privileges
-  community.mysql.mysql_query:
-    query: "FLUSH PRIVILEGES;"
+- name: Grant privileges to wp_user
+  mysql_user:
+    name: wp_user
+    priv: "wordpress.*:ALL"
+    host: "localhost"
+    state: present
     login_user: root
     login_password: "{{ db_root_password }}"
-    login_unix_socket: "{{ mysql_socket }}"
+
+# Download latest WordPress
+- name: Download latest WordPress
+  become: yes
+  get_url:
+    url: https://wordpress.org/latest.tar.gz
+    dest: /tmp/latest.tar.gz
+
+- name: Extract WordPress directly to web root
+  become: yes
+  unarchive:
+    src: /tmp/latest.tar.gz
+    dest: /var/www/html/
+    remote_src: yes
+    extra_opts: [--strip-components=1]
+
+- name: Set proper permissions for WordPress
+  become: yes
+  file:
+    path: /var/www/html
+    recurse: yes
+    owner: apache
+    group: apache
+    mode: '0755'
+
+- name: Create wp-config.php from sample
+  become: yes
+  copy:
+    src: /var/www/html/wp-config-sample.php
+    dest: /var/www/html/wp-config.php
+    remote_src: yes
+
+- name: Configure wp-config.php with DB settings
+  become: yes
+  replace:
+    path: /var/www/html/wp-config.php
+    regexp: "{{ item.regexp }}"
+    replace: "{{ item.replace }}"
+  loop:
+    - { regexp: "define\\( *'DB_NAME'.*?\\);", replace: "define('DB_NAME', 'wordpress');" }
+    - { regexp: "define\\( *'DB_USER'.*?\\);", replace: "define('DB_USER', 'wp_user');" }
+    - { regexp: "define\\( *'DB_PASSWORD'.*?\\);", replace: "define('DB_PASSWORD', '{{ db_user_password }}');" }
+    - { regexp: "define\\( *'DB_HOST'.*?\\);", replace: "define('DB_HOST', 'localhost');" }
+
+# Check if firewalld is installed
+- name: Check if firewalld is installed
+  become: yes
+  stat:
+    path: /usr/bin/firewalld
+  register: firewalld_check
+
+# Install python3-firewall for Ansible firewalld module
+- name: Install python3-firewall for Ansible firewalld module
+  become: yes
+  yum:
+    name: python3-firewall
+    state: present
+  when: firewalld_check.stat.exists
+
+# Allow HTTP through firewall (only if firewalld is installed)
+- name: Allow HTTP through firewall
+  become: yes
+  firewalld:
+    service: http
+    permanent: true
+    state: enabled
+  when:
+    - ansible_facts['os_family'] == "RedHat"
+    - firewalld_check.stat.exists
+
+# Reload firewalld (only if firewalld is installed)
+- name: Reload firewalld
+  become: yes
+  command: firewall-cmd --reload
+  when:
+    - ansible_facts['os_family'] == "RedHat"
+    - firewalld_check.stat.exists
 

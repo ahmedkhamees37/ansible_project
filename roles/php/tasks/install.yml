@@ -1,18 +1,95 @@
-- name: Install PHP and Dependencies (Ubuntu)
+---
+- name: Install PHP and Dependencies on Ubuntu/Debian
   apt:
     name:
       - php
       - php-mysql
       - libapache2-mod-php
     state: present
-  when: ansible_os_family == "Debian"
+  when: ansible_facts['os_family'] == "Debian"
 
-- name: Install PHP and Dependencies (CentOS)
+- name: Install PHP and Dependencies on CentOS/RedHat
   yum:
     name:
       - php
       - php-mysqlnd
       - php-fpm
     state: present
-  when: ansible_os_family == "RedHat"
+  when: ansible_facts['os_family'] == "RedHat"
+
+- name: Ensure Apache is installed on Ubuntu/Debian
+  apt:
+    name:
+      - apache2
+    state: present
+  when: ansible_facts['os_family'] == "Debian"
+
+- name: Ensure Apache is installed on CentOS/RedHat
+  yum:
+    name:
+      - httpd
+    state: present
+  when: ansible_facts['os_family'] == "RedHat"
+
+- name: Ensure PHP-FPM is enabled and running on CentOS/RedHat
+  systemd:
+    name: php-fpm
+    state: started
+    enabled: yes
+  when: ansible_facts['os_family'] == "RedHat"
+
+- name: Start and enable Apache (httpd) on CentOS/RedHat
+  systemd:
+    name: httpd
+    state: started
+    enabled: yes
+  when: ansible_facts['os_family'] == "RedHat"
+
+- name: Start and enable Apache (apache2) on Ubuntu/Debian
+  systemd:
+    name: apache2
+    state: started
+    enabled: yes
+  when: ansible_facts['os_family'] == "Debian"
+
+- name: Ensure mod_php is enabled on Apache (Ubuntu/Debian)
+  apache2_module:
+    name: php7
+    state: present
+  when: ansible_facts['os_family'] == "Debian"
+
+
+- name: Create PHP-FPM configuration file for Apache on CentOS/RedHat
+  copy:
+    dest: /etc/httpd/conf.d/php-fpm.conf
+    content: |
+      <IfModule proxy_fcgi_module>
+        SetHandler "proxy:fcgi://127.0.0.1:9000"
+      </IfModule>
+  when: ansible_facts['os_family'] == "RedHat"
+
+
+
+- name: Configure Apache to use PHP-FPM on CentOS/RedHat
+  lineinfile:
+    path: /etc/httpd/conf.d/php-fpm.conf
+    regexp: '^#?SetHandler application/x-httpd-php'
+    line: 'SetHandler "proxy:fcgi://127.0.0.1:9000"'
+  when: ansible_facts['os_family'] == "RedHat"
+
+- name: Configure Apache to use mod_php on Ubuntu/Debian
+  lineinfile:
+    path: /etc/apache2/apache2.conf
+    regexp: '^#?LoadModule php'
+    line: 'LoadModule php7_module /usr/lib/apache2/modules/libphp7.so'
+  when: ansible_facts['os_family'] == "Debian"
+
+- name: Restart Apache to apply changes
+  systemd:
+    name: "{{ 'apache2' if ansible_facts['os_family'] == 'Debian' else 'httpd' }}"
+    state: restarted
+
+- name: Ensure PHP is installed
+  debug:
+    msg: "PHP is installed successfully on the server."
 
